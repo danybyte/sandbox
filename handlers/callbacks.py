@@ -1,5 +1,10 @@
-
 import os
+from aiogram import Router, F
+from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
+
+
 from database.crud import get_user
 from core.ytdlp_engine import download_media
 from core.downloader import download_direct
@@ -7,8 +12,48 @@ from core.progress import ProgressUpdater
 from core.archiver import process_archive
 from github_integration.git_manager import push_to_github
 
+router = Router()
+
+
+class DownloadWorkflow(StatesGroup):
+    waiting_for_password = State()
+
+@router.callback_query(F.data.startswith("qual_"))
+async def process_quality(callback: CallbackQuery, state: FSMContext):
+    quality = callback.data.split("_")[1]
+    await state.update_data(quality=quality)
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="📄 Raw (No Zip)", callback_data="comp_raw")],[InlineKeyboardButton(text="📦 Zip (Max Compression)", callback_data="comp_zip")],[InlineKeyboardButton(text="🔐 Zip with Password", callback_data="comp_pass")]
+    ])
+
+    await callback.message.edit_text("⚙️ **Quality selected!**\nNow, how should I process and upload this file?", reply_markup=keyboard, parse_mode="Markdown")
+
+@router.callback_query(F.data.startswith("comp_"))
+async def process_compression(callback: CallbackQuery, state: FSMContext):
+    comp_type = callback.data.split("_")[1]
+
+    if comp_type == "pass":
+        await callback.message.edit_text("🔐 **Please send the password for the Zip file:**", parse_mode="Markdown")
+        await state.set_state(DownloadWorkflow.waiting_for_password)
+        return
+
+    await state.update_data(compression=comp_type)
+
+    status_msg = await callback.message.edit_text("⏳ **Initializing process...**", parse_mode="Markdown")
+    await prepare_download_task(status_msg, state)
+
+@router.message(DownloadWorkflow.waiting_for_password)
+async def handle_password(message: Message, state: FSMContext):
+    password = message.text.strip()
+    await state.update_data(compression="zip_pass", zip_password=password)
+
+    await state.set_state(None)
+    status_msg = await message.answer("⏳ **Initializing process...**", parse_mode="Markdown")
+    await prepare_download_task(status_msg, state)
 
 async def prepare_download_task(message: Message, state: FSMContext):
+    """This function gathers all user choices and passes them to the Core Engine."""
     data = await state.get_data()
 
     url = data.get("target_url")
@@ -19,8 +64,8 @@ async def prepare_download_task(message: Message, state: FSMContext):
 
     user = get_user(message.chat.id)
 
-    status_msg = await message.answer("🔄 **Starting RGit Engine...**", parse_mode="Markdown")
-    updater = ProgressUpdater(status_msg, action_text="Downloading File")
+    await message.edit_text("🔄 **Starting RGit Engine...**", parse_mode="Markdown")
+    updater = ProgressUpdater(message, action_text="Downloading File")
 
     try:
 
@@ -31,7 +76,7 @@ async def prepare_download_task(message: Message, state: FSMContext):
             downloaded_file = await download_direct(url, updater)
 
         if not downloaded_file or not os.path.exists(downloaded_file):
-            await status_msg.edit_text("❌ **Download failed.** File could not be retrieved.")
+            await message.edit_text("❌ **Download failed.** File could not be retrieved.", parse_mode="Markdown")
             return
 
 
@@ -53,7 +98,7 @@ async def prepare_download_task(message: Message, state: FSMContext):
             "*(Links bypass network restrictions)*"
         )
 
-        await status_msg.edit_text(success_text, parse_mode="Markdown", disable_web_page_preview=True)
+        await message.edit_text(success_text, parse_mode="Markdown", disable_web_page_preview=True)
 
     except Exception as e:
-        await status_msg.edit_text(f"❌ **Process Failed:**\n`{str(e)}`", parse_mode="Markdown")
+        await message.edit_text(f"❌ **Process Failed:**\n`{str(e)}`", parse_mode="Markdown")
