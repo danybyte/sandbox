@@ -1,84 +1,80 @@
 import os
-import shutil
+import uuid
 import asyncio
-import urllib.parse
-from datetime import datetime, timedelta
-from database.models import User
-from core.progress import ProgressUpdater
+import re
 
-async def push_to_github(user_id: int, user: User, file_paths: list, updater: ProgressUpdater):
-    updater.action_text = "🚀 Uploading to GitHub"
-    updater.update_sync(10, "Connecting...", "Wait")
+def sanitize_filename(name):
+    return re.sub(r'[^\w\.\-]', '_', name)
 
-    repo = user.github_repo
-    token = user.github_token
-    auth_url = f"https://oauth2:{token}@github.com/{repo}.git"
-    repo_dir = f"tmp_downloads/repo_{user_id}"
+async def split_file(file_path: str, chunk_mb: int, base_name: str, dir_name: str) -> list:
+    chunk_size = chunk_mb * 1024 * 1024
+    parts = []
+    part_num = 1
 
-    if os.path.exists(repo_dir):
-        shutil.rmtree(repo_dir)
+    with open(file_path, 'rb') as f:
+        while True:
+            chunk = f.read(chunk_size)
+            if not chunk:
+                break
+            part_path = os.path.join(dir_name, f"{base_name}.zip.{part_num:03d}")
+            with open(part_path, 'wb') as pf:
+                pf.write(chunk)
+            parts.append(part_path)
+            part_num += 1
 
-    updater.update_sync(30, "Cloning...", "Wait")
-    clone_cmd = f"git clone --depth 1 {auth_url} {repo_dir}"
-    proc = await asyncio.create_subprocess_shell(clone_cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
-    await proc.wait()
+    return parts
 
-    if proc.returncode != 0:
-        raise Exception("Failed to clone repository. Please check your Token/Repo.")
+async def process_archive(file_path: str, comp_mode: str, password: str, updater):
+    updater.action_text = "📦 Processing File"
 
-    updater.update_sync(60, "Copying...", "Wait")
-    dl_dir = os.path.join(repo_dir, "dl")
-    os.makedirs(dl_dir, exist_ok=True)
+    file_path = os.path.abspath(file_path)
+    dir_name = os.path.dirname(file_path)
 
-    uploaded_filenames =[]
-    for fp in file_paths:
-        shutil.copy(fp, dl_dir)
-        uploaded_filenames.append(os.path.basename(fp))
+    file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
+    raw_base = os.path.splitext(os.path.basename(file_path))[0]
+    ext = os.path.splitext(file_path)[1]
+
+    base_name = sanitize_filename(raw_base)
+    unique_id = str(uuid.uuid4())[:8]
+    new_base = f"{base_name}_{unique_id}"
 
 
-    links_md_path = os.path.join(repo_dir, "Links.md")
-    tehran_time = (datetime.utcnow() + timedelta(hours=3, minutes=30)).strftime("%Y-%m-%d %H:%M")
-    header = "## 🔗 Direct Download Links\n Click on any link below to start downloading directly.\n\n"
+    if comp_mode == "raw" and file_size_mb <= 90:
+        final_path = os.path.join(dir_name, f"{new_base}{ext}")
+        os.rename(file_path, final_path)
+        return [final_path]
 
-    new_links_content = f"### 📅 {tehran_time} (IR Time)\n"
-    links =[]
+    has_password = password and password != "None"
+    zip_path = os.path.join(dir_name, f"{new_base}.zip")
 
-    for fname in uploaded_filenames:
-        encoded_name = urllib.parse.quote(fname)
-        raw_url = f"https://github.com/{repo}/raw/HEAD/dl/{encoded_name}"
-        links.append(f"📥 **[{fname}]({raw_url})**")
-        new_links_content += f"- 📥 **[{fname}]({raw_url})**\n"
+    if has_password:
 
-    new_links_content += "\n"
-
-    if os.path.exists(links_md_path):
-        with open(links_md_path, "r", encoding="utf-8") as f:
-            old_content = f.read()
-            if old_content.startswith(header):
-                old_content = old_content[len(header):]
+        cmd = ["7z", "a", "-tzip", "-mx=9", f"-p{password}", zip_path, file_path]
     else:
-        old_content = ""
 
-    with open(links_md_path, "w", encoding="utf-8") as f:
-        f.write(header + new_links_content + old_content)
+        cmd = ["zip", "-j", "-9", zip_path, file_path]
+
+    process = await asyncio.create_subprocess_exec(
+        *cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE
+    )
+    stdout, stderr = await process.communicate()
 
 
-    updater.update_sync(80, "Pushing...", "Wait")
-    commands =[
-        f"cd {repo_dir}",
-        "git config user.name 'RGit uploader'",
-        "git config user.email 'bot@rgit.local'",
-        "git add dl/ Links.md",
-        "git commit -m '✨ Add new downloads [skip ci]'",
-        "git push origin HEAD"
-    ]
+    if os.path.exists(file_path):
+        os.remove(file_path)
 
-    push_cmd = " && ".join(commands)
-    proc = await asyncio.create_subprocess_shell(push_cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
-    await proc.wait()
+    if not os.path.exists(zip_path):
+        raise Exception(f"Archiving failed!\n{stderr.decode('utf-8', 'ignore')}")
 
-    if proc.returncode != 0:
-        raise Exception("Git push failed. Ensure your PAT has 'Contents: Write' permission.")
 
-    shutil.rmtree(repo_dir, ignore_errors=True)
-    return links
+    zip_size_mb = os.path.getsize(zip_path) / (1024 * 1024)
+
+
+    if zip_size_mb > 90:
+        parts = await split_file(zip_path, 90, new_base, dir_name)
+        os.remove(zip_path)
+        return parts
+
+    return [zip_path]
