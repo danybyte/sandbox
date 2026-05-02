@@ -53,8 +53,13 @@ async def prepare_download_task(message: Message, state: FSMContext):
     await state.clear()
 
     user = get_user(message.chat.id)
-    await message.edit_text("🔄 **Starting Engine...**", parse_mode="Markdown")
-    updater = ProgressUpdater(message, action_text="Processing")
+
+    try:
+        status_msg = await message.edit_text("🔄 **Starting Engine...**", parse_mode="Markdown")
+    except:
+        status_msg = await message.answer("🔄 **Starting Engine...**", parse_mode="Markdown")
+
+    updater = ProgressUpdater(status_msg, action_text="Processing")
 
     try:
         downloaded_file = None
@@ -72,7 +77,7 @@ async def prepare_download_task(message: Message, state: FSMContext):
                 downloaded_file = await download_direct(url, updater)
 
         if not downloaded_file or not os.path.exists(downloaded_file):
-            await message.edit_text("❌ **Failed to retrieve file.**", parse_mode="Markdown")
+            await status_msg.edit_text("❌ **Failed to retrieve file.**", parse_mode="Markdown")
             return
 
         final_files = await process_archive(downloaded_file, comp_mode, password, updater)
@@ -82,7 +87,7 @@ async def prepare_download_task(message: Message, state: FSMContext):
             if os.path.exists(f): os.remove(f)
 
         links_text = "\n\n".join(raw_links)
-        await message.edit_text(f"✅ **Completed!**\n\n{links_text}", parse_mode="Markdown", disable_web_page_preview=True)
+        await status_msg.edit_text(f"✅ **Completed!**\n\n{links_text}", parse_mode="Markdown", disable_web_page_preview=True)
 
     except Exception as e:
-        await message.edit_text(f"❌ **Failed:**\n`{str(e)}`", parse_mode="Markdown")
+        await status_msg.edit_text(f"❌ **Failed:**\n`{str(e)}`", parse_mode="Markdown")
