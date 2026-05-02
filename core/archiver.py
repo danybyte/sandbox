@@ -2,6 +2,7 @@ import os
 import uuid
 import asyncio
 import re
+import logging
 
 def sanitize_filename(name):
     return re.sub(r'[^\w\.\-]', '_', name)
@@ -42,6 +43,10 @@ async def process_archive(file_path: str, comp_mode: str, password: str, updater
         stderr=asyncio.subprocess.PIPE
     )
     await process.wait()
+
+    all_in_dir = os.listdir(dir_name)
+    logging.info(f"[archiver] Files in dir: {all_in_dir}")
+    logging.info(f"[archiver] Looking for prefix: {new_base}")
 
     if os.path.exists(file_path):
         os.remove(file_path)

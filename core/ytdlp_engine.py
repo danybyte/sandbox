@@ -58,6 +58,7 @@ async def download_media(url: str, quality: str, updater: ProgressUpdater, user_
                 except:
                     pass
         await process.wait()
+
         return process.returncode, all_output
     updater.action_text = "Downloading Media"
     returncode, all_output = await run_ytdlp(with_cookies=True)
