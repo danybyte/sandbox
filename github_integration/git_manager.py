@@ -40,9 +40,9 @@ async def push_to_github(user_id: int, user: User, file_paths: list, updater: Pr
 
     links_md_path = os.path.join(repo_dir, "Links.md")
     tehran_time = (datetime.utcnow() + timedelta(hours=3, minutes=30)).strftime("%Y-%m-%d %H:%M")
-    header = "
+    header = "## 🔗 Direct Download Links\n Click on any link below to start downloading directly.\n\n"
 
-    new_links_content = f"
+    new_links_content = f"### 📅 {tehran_time} (IR Time)\n"
     links = []
 
     for fname in uploaded_filenames:
