@@ -5,15 +5,17 @@ import uuid
 from core.progress import ProgressUpdater
 
 def yt_dlp_download_sync(url: str, quality: str, updater: ProgressUpdater, tmp_dir: str, cookies_txt: str = None):
+
     format_map = {
-        "best": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best/all",
-        "720p": "bestvideo[ext=mp4][height<=720]+bestaudio[ext=m4a]/best[ext=mp4][height<=720]/best/all",
-        "480p": "bestvideo[ext=mp4][height<=480]+bestaudio[ext=m4a]/best[ext=mp4][height<=480]/best/all",
-        "360p": "bestvideo[ext=mp4][height<=360]+bestaudio[ext=m4a]/best[ext=mp4][height<=360]/best/all",
+        "best": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+        "720p": "bestvideo[ext=mp4][height<=720]+bestaudio[ext=m4a]/best[ext=mp4][height<=720]/best",
+        "480p": "bestvideo[ext=mp4][height<=480]+bestaudio[ext=m4a]/best[ext=mp4][height<=480]/best",
+        "360p": "bestvideo[ext=mp4][height<=360]+bestaudio[ext=m4a]/best[ext=mp4][height<=360]/best",
         "audio": "bestaudio/best"
     }
 
     ydl_format = format_map.get(quality, format_map["best"])
+
     def my_hook(d):
         if d['status'] == 'downloading':
             try:
@@ -34,7 +36,7 @@ def yt_dlp_download_sync(url: str, quality: str, updater: ProgressUpdater, tmp_d
         'quiet': True,
         'nocheckcertificate': True,
 
-        'extractor_args': {'youtube': {'player_client':['web']}}
+        'extractor_args': {'youtube': {'player_client': ['web', 'android']}}
     }
 
     if cookies_txt:
