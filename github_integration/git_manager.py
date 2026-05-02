@@ -73,7 +73,7 @@ async def push_to_github(user_id: int, user: User, file_paths: list, updater: Pr
         "git config user.name 'RGit uploader'",
         "git config user.email 'bot@rgit.local'",
         "git checkout -B main",
-        "git add dl/ Links.md",
+        "git add -f dl/ Links.md",
         "git commit -m '✨ Add new downloads [skip ci]' || true",
         "git push -u origin main"
     ]

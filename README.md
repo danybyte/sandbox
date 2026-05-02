@@ -10,8 +10,8 @@
 - ⚡ **Blazing Fast Downloads:** Uses `Aria2c` (up to 4 concurrent connections) for direct links.
 - 🎬 **Media Extraction:** Integrated with `yt-dlp` to download videos from YouTube, Twitch, Vimeo, Reddit, SoundCloud, and more.
 - 🔓 **Bunkr Bypass:** Built-in custom API decryptor to download directly from Bunkr domains without restrictions.
-- 📁 **Telegram File Support:** Forward or upload any local file (Document, Video, Audio, Photo) directly to the bot, and it will upload it to GitHub.
-- 🗜️ **Smart Archiving & Splitting:** Automatically uses `7-Zip` to compress files. Files larger than `95MB` are split into `.zip.001`, `.zip.002` parts to bypass GitHub's file size limit. Password protection is supported.
+- 📁 **Telegram File Support:** Forward or upload any local file (Document, Video, Audio, Photo) directly to the bot. **Supports large files up to 2GB via Pyrogram!**
+- 🗜️ **Smart Archiving & Splitting:** Automatically uses `7-Zip` to compress files. Files larger than `90MB` are split into `.zip.001`, `.zip.002` parts to bypass GitHub's file size limit. Password protection is supported.
 - 📝 **Auto `Links.md` Generator:** Automatically updates a `Links.md` file in your repository with categorized download links and timestamps.
 - 📊 **Live Progress Bar:** Clean and non-spammy progress updates inside Telegram.
 - 🔁 **Smart Cookie Fallback:** Automatically retries downloads without cookies if cookie-based download fails.
@@ -74,6 +74,11 @@ BOT_TOKEN=123456789:YOUR_BOT_TOKEN_HERE
 # Database URI (SQLite is default, no setup needed)
 DB_URL=sqlite:///database/bot.db
 
+# Telegram API Credentials (REQUIRED for downloading files > 20MB)
+# Get these from https://my.telegram.org
+TG_API_ID=1234567
+TG_API_HASH=your_api_hash_here
+
 # YouTube Cookies — Optional (see cookie setup section below)
 # Option A: Path to a cookies.txt file on your server
 YOUTUBE_COOKIES=youtube_cookies.txt
@@ -109,6 +114,18 @@ pm2 save
 | `/status` | Check your current configuration |
 
 > 💡 Just send any **URL** or **Telegram File** to the bot, choose your quality/compression via inline buttons, and get your raw direct links!
+
+---
+
+## 📱 Setting Up Telegram API (For Large Files > 20MB)
+
+Telegram's standard Bot API restricts file downloads to **20MB**. To bypass this and download files up to **2GB**, you must provide your Telegram API credentials.
+
+1. Log in to [my.telegram.org](https://my.telegram.org).
+2. Go to **API development tools**.
+3. Create a new application (if you haven't already).
+4. Copy your **App api_id** and **App api_hash**.
+5. Add them to your `.env` file under `TG_API_ID` and `TG_API_HASH`.
 
 ---
 
@@ -150,6 +167,7 @@ YOUTUBE_COOKIES=youtube_cookies.txt
 │   ├── bunkr_engine.py       # Bunkr API bypass downloader
 │   ├── downloader.py         # Aria2c direct downloader
 │   ├── progress.py           # Telegram progress bar
+│   ├── tg_downloader.py      # Pyrogram engine for large files
 │   └── ytdlp_engine.py       # yt-dlp media downloader
 ├── database/
 │   ├── models.py             # SQLAlchemy models
@@ -175,7 +193,7 @@ YOUTUBE_COOKIES=youtube_cookies.txt
 
 ## ⚠️ Important Notes
 
-- GitHub has a **100MB hard limit** per file. The bot automatically splits files at **95MB** to stay safe.
+- GitHub has a **100MB hard limit** per file. The bot automatically splits files at **90MB** to stay safe.
 - The `Links.md` file in your repo is updated automatically with every upload and includes Tehran (IR) timestamps.
 - `tmp_downloads/` is used as a working directory and is cleaned up after each upload.
 - Do **not** commit your `.env` file or `youtube_cookies.txt` — add them to `.gitignore`.
