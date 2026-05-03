@@ -1,5 +1,4 @@
 import os
-import uuid
 from pyrogram import Client
 from core.progress import ProgressUpdater
 
@@ -9,13 +8,9 @@ async def download_large_tg_file(
     bot_token: str,
     message_id: int,
     chat_id: int,
-    ext: str,
+    dest_path: str,
     updater: ProgressUpdater
 ) -> str:
-    tmp_dir = "tmp_downloads"
-    os.makedirs(tmp_dir, exist_ok=True)
-    local_name = f"tg_{uuid.uuid4().hex[:6]}{ext}"
-    file_path = os.path.join(tmp_dir, local_name)
 
     async with Client(
         name="rgit_bot_session",
@@ -31,6 +26,6 @@ async def download_large_tg_file(
                 percent = (current / total) * 100
                 updater.update_sync(percent, f"{current//1024//1024}MB", "Calc...")
 
-        await app.download_media(msg, file_name=file_path, progress=progress)
+        await app.download_media(msg, file_name=dest_path, progress=progress)
 
-    return file_path
+    return dest_path

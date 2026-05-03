@@ -12,13 +12,15 @@ async def download_media(url: str, quality: str, updater: ProgressUpdater, user_
     elif quality == "480p":
         ytdlp_args = ["-f", "bestvideo[height<=480]+bestaudio/best[height<=480]/best", "--merge-output-format", "mp4"]
     elif quality == "360p":
-        ytdlp_args = ["-f", "bestvideo[height<=360]+bestaudio/best[height<=360]/best", "--merge-output-format", "mp4"]
+        ytdlp_args =["-f", "bestvideo[height<=360]+bestaudio/best[height<=360]/best", "--merge-output-format", "mp4"]
     elif quality == "audio":
         ytdlp_args = ["-x", "--audio-format", "mp3"]
     else:
-        ytdlp_args = ["-f", "bestvideo+bestaudio/best", "--merge-output-format", "mp4"]
+        ytdlp_args =["-f", "bestvideo+bestaudio/best", "--merge-output-format", "mp4"]
     file_id = uuid.uuid4().hex[:8]
-    outtmpl = os.path.join(tmp_dir, f"{file_id}_%(title)s.%(ext)s")
+    dl_dir = os.path.join(tmp_dir, file_id)
+    os.makedirs(dl_dir, exist_ok=True)
+    outtmpl = os.path.join(dl_dir, "%(title)s.%(ext)s")
     cookies_file_to_delete = None
     if user_cookies and not os.path.isfile(user_cookies) and len(user_cookies.strip()) > 20:
         cookies_file_to_delete = os.path.join(tmp_dir, f"cookies_{uuid.uuid4().hex[:6]}.txt")
@@ -26,8 +28,7 @@ async def download_media(url: str, quality: str, updater: ProgressUpdater, user_
             f.write(user_cookies.strip())
         user_cookies = cookies_file_to_delete
     async def run_ytdlp(with_cookies: bool) -> tuple[int, list[str]]:
-        cmd = ["yt-dlp", "--newline", "--no-warnings",
-               "--extractor-args", "youtube:player_client=android,web"]
+        cmd =["yt-dlp", "--newline", "--no-warnings", "--extractor-args", "youtube:player_client=android,web"]
         if with_cookies and user_cookies and os.path.isfile(user_cookies) and os.path.getsize(user_cookies) > 50:
             cmd.extend(["--cookies", user_cookies])
         cmd.extend(ytdlp_args)
@@ -40,40 +41,31 @@ async def download_media(url: str, quality: str, updater: ProgressUpdater, user_
             stderr=asyncio.subprocess.STDOUT
         )
         regex_progress = re.compile(r'\[download\]\s+([0-9\.]+)%.*at\s+([0-9a-zA-Z\./]+)\s+ETA\s+([0-9:]+)')
-        all_output = []
+        all_output =[]
         while True:
             line = await process.stdout.readline()
-            if not line:
-                break
+            if not line: break
             text = line.decode('utf-8', errors='ignore').strip()
             all_output.append(text)
-            logging.info(f"[yt-dlp]: {text}")
             match = regex_progress.search(text)
             if match:
                 try:
                     percent = float(match.group(1))
-                    speed = match.group(2)
-                    eta = match.group(3)
-                    updater.update_sync(percent, speed, eta)
-                except:
-                    pass
+                    updater.update_sync(percent, match.group(2), match.group(3))
+                except: pass
         await process.wait()
-
         return process.returncode, all_output
     updater.action_text = "Downloading Media"
     returncode, all_output = await run_ytdlp(with_cookies=True)
-    downloaded_files = glob.glob(os.path.join(tmp_dir, f"{file_id}_*"))
+    downloaded_files = glob.glob(os.path.join(dl_dir, "*"))
     if not downloaded_files or returncode != 0:
-        import logging
-        logging.warning("[yt-dlp] Failed with cookies, retrying without cookies...")
         updater.action_text = "Retrying without cookies"
         updater.update_sync(5, "Retry...", "Wait")
         returncode, all_output = await run_ytdlp(with_cookies=False)
-        downloaded_files = glob.glob(os.path.join(tmp_dir, f"{file_id}_*"))
+        downloaded_files = glob.glob(os.path.join(dl_dir, "*"))
     if cookies_file_to_delete and os.path.exists(cookies_file_to_delete):
         os.remove(cookies_file_to_delete)
     if downloaded_files:
         return downloaded_files[0]
     else:
-        error_text = "\n".join(all_output[-10:])
-        raise Exception(f"yt-dlp failed:\n{error_text}")
+        raise Exception(f"yt-dlp failed:\n" + "\n".join(all_output[-10:]))
