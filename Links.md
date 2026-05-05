@@ -2,6 +2,27 @@
  Click on any link below to start downloading directly.
 
 
+### 📅 2026-05-05 22:45 (IR Time)
+- 📥 **[Alien.mp3](https://github.com/danybyte/sandbox/raw/main/dl/Alien.mp3)**
+- 📥 **[Back From The Dead.mp3](https://github.com/danybyte/sandbox/raw/main/dl/Back%20From%20The%20Dead.mp3)**
+- 📥 **[Bombshell.mp3](https://github.com/danybyte/sandbox/raw/main/dl/Bombshell.mp3)**
+- 📥 **[Brightside.mp3](https://github.com/danybyte/sandbox/raw/main/dl/Brightside.mp3)**
+- 📥 **[Heavy MeNtal (Fuck Yeah).mp3](https://github.com/danybyte/sandbox/raw/main/dl/Heavy%20MeNtal%20%28Fuck%20Yeah%29.mp3)**
+- 📥 **[I Come First.mp3](https://github.com/danybyte/sandbox/raw/main/dl/I%20Come%20First.mp3)**
+- 📥 **[Legendary.mp3](https://github.com/danybyte/sandbox/raw/main/dl/Legendary.mp3)**
+- 📥 **[Mine.mp3](https://github.com/danybyte/sandbox/raw/main/dl/Mine.mp3)**
+- 📥 **[My Redemption.mp3](https://github.com/danybyte/sandbox/raw/main/dl/My%20Redemption.mp3)**
+- 📥 **[Psycho Crazy.mp3](https://github.com/danybyte/sandbox/raw/main/dl/Psycho%20Crazy.mp3)**
+- 📥 **[Raise Your Horns.mp3](https://github.com/danybyte/sandbox/raw/main/dl/Raise%20Your%20Horns.mp3)**
+- 📥 **[Special.mp3](https://github.com/danybyte/sandbox/raw/main/dl/Special.mp3)**
+- 📥 **[Strange Girl.mp3](https://github.com/danybyte/sandbox/raw/main/dl/Strange%20Girl.mp3)**
+- 📥 **[Terrible Things.mp3](https://github.com/danybyte/sandbox/raw/main/dl/Terrible%20Things.mp3)**
+- 📥 **[The Steeple.mp3](https://github.com/danybyte/sandbox/raw/main/dl/The%20Steeple.mp3)**
+- 📥 **[Wannabe.mp3](https://github.com/danybyte/sandbox/raw/main/dl/Wannabe.mp3)**
+- 📥 **[Wicked Ways.mp3](https://github.com/danybyte/sandbox/raw/main/dl/Wicked%20Ways.mp3)**
+- 📥 **[You Only Die Once.mp3](https://github.com/danybyte/sandbox/raw/main/dl/You%20Only%20Die%20Once.mp3)**
+
+
 ### 📅 2026-05-05 20:26 (IR Time)
 - 📥 **[debian-13.4.0-amd64-netinst.iso.zip](https://github.com/danybyte/sandbox/raw/main/dl/debian-13.4.0-amd64-netinst.iso.zip)**
 - 📥 **[debian-13.4.0-amd64-netinst.iso.z01](https://github.com/danybyte/sandbox/raw/main/dl/debian-13.4.0-amd64-netinst.iso.z01)**
